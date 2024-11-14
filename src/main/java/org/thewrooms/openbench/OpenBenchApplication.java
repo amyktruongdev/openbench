@@ -8,6 +8,7 @@ public class OpenBenchApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(OpenBenchApplication.class, args);
+        System.out.println("OpenBench application started");
     }
 
 }
