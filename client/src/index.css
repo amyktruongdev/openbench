@@ -123,7 +123,7 @@ li a:hover {
 }
 
 /**/
-input[type=text], input[type=password] {
+input[type=text], input[type=password], input[type=uname] {
   width: 100%;
   padding: 12px 20px;
   margin: 8px 0;
@@ -149,6 +149,13 @@ button:hover {
 .cancelbtn {
   width: auto;
   padding: 10px 18px;
+  background-color: #f44336;
+}
+
+.createbtn {
+  width: auto;
+  padding: 10px 18px;
+  float: right;
   background-color: #f44336;
 }
 
@@ -194,8 +201,4 @@ li a {
 
 li a:hover {
   background-color: red;
-}
-
-.book{
-  color: rgb(86, 55, 61);
 }
