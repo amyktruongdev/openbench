@@ -202,3 +202,22 @@ li a {
 li a:hover {
   background-color: red;
 }
+
+.header{
+  text-align: center;
+  color: white;
+  font-size: 30px;
+}
+
+/*date and time component*/
+.datetime-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.datetime {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffdcdc;
+}

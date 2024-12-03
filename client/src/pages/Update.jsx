@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const Update = () => {
   return (
     <div>
-      <h1>OpenBench Login</h1>
+      <h1 className="header">OpenBench Login</h1>
       <div className="container">
         <label htmlFor="uname"><b>Username</b></label>
         <input type="text" placeholder="Enter Username" name="uname" required />

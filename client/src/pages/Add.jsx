@@ -1,12 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Nav from '../Nav';
-import Footer from '../Footer'
+import Footer from '../Footer';
+import Time from '../Time';
 
 const Add = () => {
   return (
     <div>
-        <h1>OpenBench</h1>
+        <h1 className="header">OpenBench</h1>
+        <Time />
         <Nav />
     <div className="logOut">
     <button><Link to="/update">Logout</Link></button>

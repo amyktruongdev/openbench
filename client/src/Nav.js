@@ -7,6 +7,7 @@ function Nav(){
                 <li><a href="/maintenance.html">Maintenance</a></li>
                 <li><a href="/analytics.html">Analytics</a></li>
                 <li><a href="#">Settings</a></li>
+                <li><a href="#">LOGOUT</a></li>
             </ul>
         </div>
     </div>

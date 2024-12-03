@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const Registration = () => {
   return (
     <div>
-      <h1>OpenBench Create Account</h1>
+      <h1 className="header">OpenBench Create Account</h1>
       <div className="container">
         <label htmlFor="firstname"><b>First Name</b></label>
         <input type="text" placeholder="Enter Username" name="firstname" required />
