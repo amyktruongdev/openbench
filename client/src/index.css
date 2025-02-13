@@ -11,7 +11,6 @@ body {
   align-items: center;
 }
 
-/**/
 
 #title {
   color: white;
@@ -28,37 +27,56 @@ body {
 }
 
 .navbar {
-  width: 100%;
-  max-width: 1200px;
-  margin: 15px auto;
-  border: 1px solid #444;
+  position: fixed; /* Keeps navbar on the left */
+  left: 0; /* Align to the left */
+  top: 0; /* Stick to the top */
+  height: 100vh; /* Full height of the viewport */
+  width: 450px !important; /* Ensure width change with !important */
   background-color: rgba(0, 0, 0, 0.5);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-ul {
+/* Ensure the list takes full width */
+.navbar ul {
   list-style-type: none;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
   padding: 0;
   margin: 0;
+  width: 100%;
 }
 
-li {
-  margin: 0;
+.navbar ul li {
+  width: 100%;
+  text-align: center;
 }
 
-li a {
+.navbar ul li a {
   display: block;
   color: white;
-  padding: 16px;
+  padding: 30px; /* Adjust padding */
   font-size: 20px;
   text-decoration: none;
+  width: 100%; /* Ensure links take full width */
+  box-sizing: border-box; /* Prevent overflow */
 }
 
-li a:hover {
+.navbar ul li a:hover {
   background-color: red;
+  width: 100%; /* Ensure hover effect stays inside navbar */
+  box-sizing: border-box; /* Prevent overflow */
 }
+
+
+/* Adjust the content so it does not overlap */
+.content {
+  margin-left: 170px; /* Adjust margin according to navbar width */
+  padding: 20px;
+  width: calc(100% - 170px); /* Ensure it adjusts dynamically */
+}
+
+
 
 .box-container {
   display: flex;
@@ -166,41 +184,6 @@ button:hover {
 span.psw {
   float: right;
   padding-top: 16px;
-}
-
-/*navbar*/
-
-.navbar {
-  width: 100%;
-  max-width: 1200px;
-  margin: 15px auto;
-  border: 1px solid #444;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-ul {
-  list-style-type: none;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  padding: 0;
-  margin: 0;
-}
-
-li {
-  margin: 0;
-}
-
-li a {
-  display: block;
-  color: white;
-  padding: 16px;
-  font-size: 15px;
-  text-decoration: none;
-}
-
-li a:hover {
-  background-color: red;
 }
 
 .header{
