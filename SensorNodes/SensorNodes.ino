@@ -1,20 +1,19 @@
 #include <Wire.h>
+#include <MPU6050.h>
 #include <esp_now.h>
+#include <Preferences.h>
 #include <WiFi.h>
 #include "esp_eap_client.h"
-#include <MPU6050.h>
-#include <Preferences.h>
-
-Preferences preferences;
 
 /****************************************************************
-                      SETTING UP WIFI
+                    SETTING UP WIFI CONNECTION
 ****************************************************************/
+Preferences preferences;
 
 // SSID for eduroam
 const char* ssid = "eduroam";
 
-// Function to save credentials securely in NVS
+// Saves credentials in NVS
 void saveCredentials(const char* identity, const char* username, const char* password) {
   preferences.begin("wifi", false); // Open "wifi" namespace in read-write mode
   preferences.putString("identity", identity);
@@ -23,26 +22,26 @@ void saveCredentials(const char* identity, const char* username, const char* pas
   preferences.end(); // Close preferences
 }
 
-// Function to load credentials securely from NVS
+// Loads credentials from NVS
 void loadCredentials(String& identity, String& username, String& password) {
   preferences.begin("wifi", true); // Open "wifi" namespace in read-only mode
   identity = preferences.getString("identity", "");
   username = preferences.getString("username", "");
   password = preferences.getString("password", "");
-  preferences.end(); // Close preferences
+  preferences.end();
 }
 
 // Function to delete stored credentials (optional)
 void deleteCredentials() {
   preferences.begin("wifi", false); // Open "wifi" namespace in read-write mode
   preferences.clear(); // Clear all keys in the namespace
-  preferences.end(); // Close preferences
+  preferences.end(); 
 }
 
-// Connect to WiFi using stored credentials
+// Connects to WiFi using stored credentials
 void connectToEduroam() {
   String identity, username, password;
-  loadCredentials(identity, username, password); // Load credentials
+  loadCredentials(identity, username, password); // Loads credentials
 
   if (identity.isEmpty() || username.isEmpty() || password.isEmpty()) {
     Serial.println(F("No credentials stored. Please save them first."));
@@ -68,83 +67,100 @@ void connectToEduroam() {
 /****************************************************************
                       SETTING UP MPU6050
 ****************************************************************/
-/*
-// MPU6050 I2C address
-const int MPU6050_ADDR = 0x68; // Default I2C address for MPU6050
-const int ledPin = 2;          // LED connected to GPIO2
-const float movementThreshold = 0.2; // Change threshold in "g"
+MPU6050 mpu;  // Creates an instance of the MPU6050 sensor
+#define MOVEMENT_THRESHOLD 1.4  // Adjust based on sensitivity
 
-// Variables to store acceleration values
-int16_t accelX, accelY, accelZ;
-float prevAx = 0, prevAy = 0, prevAz = 0; // Previous acceleration values
-float ax, ay, az; // Current acceleration values
-float deltaAx, deltaAy, deltaAz; // Change in acceleration
-*/
-/****************************************************************
-                      SETTING UP ESP-NOW
-****************************************************************/
+void mpuSetUp() {
+    // Initialize MPU6050
+    Serial.println("Initializing MPU6050...");
+    mpu.initialize();
 
-MPU6050 mpu;
-const int movementThreshold = 5000;  // Adjust based on sensitivity
-uint8_t gatewayMAC[] = {0xEC, 0x64, 0xC9, 0x5D, 0x37, 0x24};  // Replace with Gateway ESP32 MAC Address
+    // Check if MPU6050 is connected
+    if (!mpu.testConnection()) {
+        Serial.println("MPU6050 connection failed!");
+        while (1);
+    }
 
-
-typedef struct {
-    uint32_t timestamp;
-} SensorData;
-
-esp_now_peer_info_t peerInfo;
-SensorData dataToSend;
-
-void onSent(const uint8_t *macAddr, esp_now_send_status_t status) {
-    Serial.print("ESP-Now Send Status: ");
-    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
+    Serial.println("MPU6050 initialized!");
 }
 
+/****************************************************************
+                        SETTING UP ESP-NOW
+****************************************************************/
+uint8_t gatewayAddress[] = {0xEC, 0x64, 0xC9, 0x5D, 0x37, 0x24}; // MAC of the gateway ESP32
+
+typedef struct {
+    char id[10];
+    bool active;
+} SensorData;
+
+SensorData data;
+
+// Callback when ESP-NOW data is sent
+void onDataSent(const uint8_t *macAddr, esp_now_send_status_t status) {
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "ESP-NOW Send Success" : "ESP-NOW Send Fail");
+}
+
+void setupESPNow() {
+    WiFi.mode(WIFI_STA);
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("ESP-NOW initialization failed!");
+        return;
+    }
+    esp_now_register_send_cb(onDataSent);
+
+    esp_now_peer_info_t peerInfo = {};
+    memcpy(peerInfo.peer_addr, gatewayAddress, 6);
+    peerInfo.channel = 0;
+    peerInfo.encrypt = false;
+    
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+        Serial.println("Failed to add ESP-NOW peer.");
+    }
+}
 
 /****************************************************************
 ****************************************************************/
 
 void setup() {
-  Serial.begin(115200);
-  Wire.begin();
-  mpu.initialize();
-  connectToEduroam();
+    Serial.begin(115200);
+    Wire.begin();
+    
+    mpuSetUp();
+    setupESPNow();
 
-  WiFi.mode(WIFI_STA);
-  if (esp_now_init() != ESP_OK) {
-      Serial.println("ESP-Now Init Failed");
-      return;
-  }
+    strcpy(data.id, "bench");  // Set equipment ID
+}
 
-  memcpy(peerInfo.peer_addr, gatewayMAC, 6);
-  peerInfo.channel = 0;
-  peerInfo.encrypt = false;
-
-  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-      Serial.println("Failed to add peer");
-      return;
-  }
-
-  esp_now_register_send_cb(onSent);
+void sendData() {
+    esp_err_t result = esp_now_send(gatewayAddress, (uint8_t *)&data, sizeof(data));
+    if (result != ESP_OK) {
+        Serial.println("ESP-NOW send failed");
+    }
 }
 
 void loop() {
-  int16_t ax, ay, az, gx, gy, gz;
-  mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+    int16_t ax, ay, az; // Raw accelerometer values
 
-  int motionMagnitude = abs(ax) + abs(ay) + abs(az);
-  if (motionMagnitude > movementThreshold) {
-      Serial.println("Movement detected!");
-      dataToSend.timestamp = millis();
+    // Read raw accelerometer data
+    mpu.getAcceleration(&ax, &ay, &az);
 
-      esp_err_t result = esp_now_send(gatewayMAC, (uint8_t *)&dataToSend, sizeof(dataToSend));
-      if (result == ESP_OK) {
-          Serial.println("Data sent successfully");
-      } else {
-          Serial.println("Error sending data");
-      }
-  }
+    // Convert raw values to g-force (assuming default ±2G range)
+    float accelX = ax / 16384.0;
+    float accelY = ay / 16384.0;
+    float accelZ = az / 16384.0;
 
-  delay(500);  // Adjust as needed
+    // Compute total acceleration magnitude
+    float accelMagnitude = sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ);
+
+    // Check if movement is detected
+    bool movementDetected = accelMagnitude > MOVEMENT_THRESHOLD;
+    if (movementDetected != data.active) {  // Send data only if state changes
+        data.active = movementDetected;
+        Serial.println(movementDetected ? "🚨 Movement Detected!" : "💤 No Movement");
+        sendData();
+    }
+
+    delay(1000);  // Adjust sampling rate
+
 }
