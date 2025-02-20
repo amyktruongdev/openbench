@@ -1,6 +1,7 @@
 .map-container {
     position: relative;
     display: inline-block;
+    margin-left: 320px; /* Push the map right, past the navbar */
   }
   
   .map-image {

@@ -6,7 +6,7 @@ import '../Map.css';
 const Map = () => {
   return (
     <div>
-      <h1>OpenBench</h1>
+      <h1 className="header">OpenBench</h1>
       <Time />
       <Nav></Nav>
       <div className="map-container">
