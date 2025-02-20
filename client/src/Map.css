@@ -1,0 +1,82 @@
+.map-container {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .map-image {
+    width: 1000px; /* Adjust as needed */
+    height: auto;
+  }
+  
+  .overlay-shape {
+    position: absolute;
+    top: 300px; /* Align under number 2 */
+    left: 560px; /* Position of the first shape */
+    width: 40px; /* Shape size */
+    height: 40px;
+    background-color: rgba(255, 0, 0, 0.5); /* Semi-transparent red */
+    border: 2px solid black;
+    pointer-events: auto; /* Allow hover */
+    border-radius: 5px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover */
+  }
+  
+  /* Hover effect for pop-out */
+  .overlay-shape:hover {
+    transform: scale(1.2); /* Pop-out by scaling */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Add subtle shadow */
+    cursor: pointer; /* Show pointer cursor */
+  }
+  
+  /* First row of shapes */
+  .right-shape {
+    left: calc(560px + 50px);
+    background-color: rgba(0, 0, 255, 0.5); /* Blue */
+  }
+  
+  .right-shape-two {
+    left: calc(560px + 100px);
+    background-color: rgba(0, 255, 0, 0.5); /* Green */
+  }
+  
+  .right-shape-three {
+    left: calc(560px + 150px);
+    background-color: rgba(255, 0, 0, 0.5);
+  }
+  
+  .right-shape-four {
+    left: calc(560px + 200px);
+    background-color: rgba(0, 255, 0, 0.5); /* Green */
+  }
+  
+  /* Second row of shapes */
+  .second-row-shape {
+    top: calc(300px + 50px);
+    left: 560px;
+    background-color: rgba(0, 0, 255, 0.5); /* Blue */
+  }
+  
+  .second-row-shape-two {
+    top: calc(300px + 50px);
+    left: calc(560px + 50px);
+    background-color: rgba(0, 255, 0, 0.5); /* Green */
+  }
+  
+  .second-row-shape-three {
+    top: calc(300px + 50px);
+    left: calc(560px + 100px);
+    background-color: rgba(0, 255, 0, 0.5); /* Green */
+  }
+  
+  .second-row-shape-four {
+    top: calc(300px + 50px);
+    left: calc(560px + 150px);
+    background-color: rgba(255, 0, 0, 0.5);
+  }
+  
+  .second-row-shape-five {
+    top: calc(300px + 50px);
+    left: calc(560px + 200px);
+    background-color: rgba(255, 0, 0, 0.5);
+  }
+  

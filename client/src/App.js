@@ -8,7 +8,7 @@ import Books from "./pages/Books";
 import Update from "./pages/Update";
 import Forgot from "./pages/Forgot";
 import Registration from "./pages/Registration";
-
+import Map from "./pages/Map";
 
 
 function App() {
@@ -21,6 +21,7 @@ function App() {
         <Route path="/update" element={<Update/>}/>
         <Route path="/forgot" element={<Forgot/>}/>
         <Route path="/registration" element={<Registration/>}/>
+        <Route path="/map" element={<Map/>}/>
       </Routes>
       </BrowserRouter>
 

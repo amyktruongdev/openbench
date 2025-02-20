@@ -26,20 +26,23 @@ body {
   margin-bottom: 20px;
 }
 
+/* Base Navbar */
 .navbar {
-  position: fixed; /* Keeps navbar on the left */
-  left: 0; /* Align to the left */
-  top: 0; /* Stick to the top */
-  height: 100vh; /* Full height of the viewport */
-  width: 450px !important; /* Ensure width change with !important */
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 300px;
   background-color: rgba(0, 0, 0, 0.5);
   padding-top: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: width 0.3s ease; /* Smooth transition */
+  z-index: 1000;
 }
 
-/* Ensure the list takes full width */
+/* Navbar Items */
 .navbar ul {
   list-style-type: none;
   padding: 0;
@@ -55,27 +58,63 @@ body {
 .navbar ul li a {
   display: block;
   color: white;
-  padding: 30px; /* Adjust padding */
+  padding: 30px;
   font-size: 20px;
   text-decoration: none;
-  width: 100%; /* Ensure links take full width */
-  box-sizing: border-box; /* Prevent overflow */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .navbar ul li a:hover {
   background-color: red;
-  width: 100%; /* Ensure hover effect stays inside navbar */
-  box-sizing: border-box; /* Prevent overflow */
+  width: 100%;
+  box-sizing: border-box;
 }
 
-
-/* Adjust the content so it does not overlap */
+/* Main Content */
 .content {
-  margin-left: 170px; /* Adjust margin according to navbar width */
+  margin-left: 300px; /* Adjust for navbar width */
   padding: 20px;
-  width: calc(100% - 170px); /* Ensure it adjusts dynamically */
+  transition: margin-left 0.3s ease; /* Smooth transition */
+  width: calc(100% - 300px); /* Adjust dynamically */
 }
 
+/* Responsive Navbar for Small Screens */
+@media (max-width: 768px) {
+  .navbar {
+    width: 60px; /* Collapse navbar */
+  }
+
+  .navbar ul li a {
+    font-size: 0; /* Hide text */
+    padding: 20px;
+  }
+
+  .navbar ul li a::before {
+    content: '•'; /* Replace text with a dot/icon */
+    font-size: 24px;
+    color: white;
+  }
+
+  .content {
+    margin-left: 60px; /* Adjust content margin */
+    width: calc(100% - 60px);
+  }
+
+  /* Expand Navbar on Hover */
+  .navbar:hover {
+    width: 200px;
+  }
+
+  .navbar:hover ul li a {
+    font-size: 16px; /* Show text on hover */
+  }
+
+  .navbar:hover .content {
+    margin-left: 200px; /* Expand content on hover */
+    width: calc(100% - 200px);
+  }
+}
 
 
 .box-container {
