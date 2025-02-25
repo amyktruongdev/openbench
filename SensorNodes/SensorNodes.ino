@@ -89,32 +89,37 @@ void mpuSetUp() {
 ****************************************************************/
 uint8_t gatewayAddress[] = {0xEC, 0x64, 0xC9, 0x5D, 0x37, 0x24}; // MAC of the gateway ESP32
 
+// Sensor Data structure defined to hold data related to sensor.
 typedef struct {
-    char id[10];
-    bool active;
+    char id[10]; // Sensor node's unique id.
+    bool active; // Boolean to represent if in use or not.
 } SensorData;
 
 SensorData data;
 
-// Callback when ESP-NOW data is sent
+// Callback when ESP-NOW data is sent.
+// Parameters mac address & status of send operation.
 void onDataSent(const uint8_t *macAddr, esp_now_send_status_t status) {
-    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "ESP-NOW Send Success" : "ESP-NOW Send Fail");
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Data sent! YAY." : "IT FAILED. BOOHOO!");
 }
 
 void setupESPNow() {
-    WiFi.mode(WIFI_STA);
+    WiFi.mode(WIFI_STA); // Set to station mode.
+    // Check if ESP-NOW initialization failed.
     if (esp_now_init() != ESP_OK) {
         Serial.println("ESP-NOW initialization failed!");
         return;
     }
-    esp_now_register_send_cb(onDataSent);
+    esp_now_register_send_cb(onDataSent); // Register "onDataSent" callback to check if send was good or not
 
-    esp_now_peer_info_t peerInfo = {};
-    memcpy(peerInfo.peer_addr, gatewayAddress, 6);
-    peerInfo.channel = 0;
-    peerInfo.encrypt = false;
+    esp_now_peer_info_t gatewayInfo = {}; // Will hold info about the gateway.
+    // Copy gateway's mac addy into gatewayInfo's "peer_addr" field.
+    memcpy(gatewayInfo.peer_addr, gatewayAddress, 6); // 6 bytes for each 2-digit hexadecimal value in mac addy
+    gatewayInfo.channel = 0;
+    gatewayInfo.encrypt = false;
     
-    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    // Check to see if gateway was added as peer in ESP-NOW network.
+    if (esp_now_add_peer(&gatewayInfo) != ESP_OK) {
         Serial.println("Failed to add ESP-NOW peer.");
     }
 }
