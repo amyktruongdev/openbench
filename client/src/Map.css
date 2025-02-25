@@ -1,83 +1,141 @@
+/* Ensure the map container is pushed right to avoid the navbar */
 .map-container {
-    position: relative;
-    display: inline-block;
-    margin-left: 320px; /* Push the map right, past the navbar */
-  }
-  
-  .map-image {
-    width: 1000px; /* Adjust as needed */
-    height: auto;
-  }
-  
-  .overlay-shape {
-    position: absolute;
-    top: 300px; /* Align under number 2 */
-    left: 560px; /* Position of the first shape */
-    width: 40px; /* Shape size */
-    height: 40px;
-    background-color: rgba(255, 0, 0, 0.5); /* Semi-transparent red */
-    border: 2px solid black;
-    pointer-events: auto; /* Allow hover */
-    border-radius: 5px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover */
-  }
-  
-  /* Hover effect for pop-out */
-  .overlay-shape:hover {
-    transform: scale(1.2); /* Pop-out by scaling */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Add subtle shadow */
-    cursor: pointer; /* Show pointer cursor */
-  }
-  
-  /* First row of shapes */
-  .right-shape {
-    left: calc(560px + 50px);
-    background-color: rgba(0, 0, 255, 0.5); /* Blue */
-  }
-  
-  .right-shape-two {
-    left: calc(560px + 100px);
-    background-color: rgba(0, 255, 0, 0.5); /* Green */
-  }
-  
-  .right-shape-three {
-    left: calc(560px + 150px);
-    background-color: rgba(255, 0, 0, 0.5);
-  }
-  
-  .right-shape-four {
-    left: calc(560px + 200px);
-    background-color: rgba(0, 255, 0, 0.5); /* Green */
-  }
-  
-  /* Second row of shapes */
-  .second-row-shape {
-    top: calc(300px + 50px);
-    left: 560px;
-    background-color: rgba(0, 0, 255, 0.5); /* Blue */
-  }
-  
-  .second-row-shape-two {
-    top: calc(300px + 50px);
-    left: calc(560px + 50px);
-    background-color: rgba(0, 255, 0, 0.5); /* Green */
-  }
-  
-  .second-row-shape-three {
-    top: calc(300px + 50px);
-    left: calc(560px + 100px);
-    background-color: rgba(0, 255, 0, 0.5); /* Green */
-  }
-  
-  .second-row-shape-four {
-    top: calc(300px + 50px);
-    left: calc(560px + 150px);
-    background-color: rgba(255, 0, 0, 0.5);
-  }
-  
-  .second-row-shape-five {
-    top: calc(300px + 50px);
-    left: calc(560px + 200px);
-    background-color: rgba(255, 0, 0, 0.5);
-  }
-  
+  position: relative;
+  display: inline-block;
+  margin-left: 320px; /* Adjusted to account for a fixed 300px navbar plus extra spacing */
+  margin-top: 20px;   /* Optional: add top margin if needed */
+}
+
+.map-image {
+  width: 1000px; /* Adjust as needed */
+  height: auto;
+}
+
+.overlay-shape {
+  position: absolute;
+  top: 300px; /* Starting position */
+  left: 560px; /* First shape position */
+  width: 40px;
+  height: 40px;
+  background-color: rgba(255, 0, 0, 0.5); /* Default: red (taken) */
+  border: 2px solid black;
+  pointer-events: auto;
+  border-radius: 5px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Hover effect for pop-out */
+.overlay-shape:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+/* First row of shapes */
+.right-shape {
+  left: calc(560px + 50px);
+  background-color: rgba(0, 0, 255, 0.5); /* Blue for under maintenance */
+}
+
+.right-shape-two {
+  left: calc(560px + 100px);
+  background-color: rgba(0, 255, 0, 0.5); /* Green for available */
+}
+
+.right-shape-three {
+  left: calc(560px + 150px);
+  background-color: rgba(255, 0, 0, 0.5); /* Red for taken */
+}
+
+.right-shape-four {
+  left: calc(560px + 200px);
+  background-color: rgba(0, 255, 0, 0.5); /* Green for available */
+}
+
+/* Second row of shapes */
+.second-row-shape {
+  top: calc(300px + 50px);
+  left: 560px;
+  background-color: rgba(0, 0, 255, 0.5); /* Blue for under maintenance */
+}
+
+.second-row-shape-two {
+  top: calc(300px + 50px);
+  left: calc(560px + 50px);
+  background-color: rgba(0, 255, 0, 0.5); /* Green for available */
+}
+
+.second-row-shape-three {
+  top: calc(300px + 50px);
+  left: calc(560px + 100px);
+  background-color: rgba(0, 255, 0, 0.5); /* Green for available */
+}
+
+.second-row-shape-four {
+  top: calc(300px + 50px);
+  left: calc(560px + 150px);
+  background-color: rgba(255, 0, 0, 0.5); /* Red for taken */
+}
+
+.second-row-shape-five {
+  top: calc(300px + 50px);
+  left: calc(560px + 200px);
+  background-color: rgba(255, 0, 0, 0.5); /* Red for taken */
+}
+
+/* Map Legend Styles */
+.map-legend {
+  position: absolute;
+  bottom: 20px;
+  left: 20px; /* Adjust to keep a consistent gap from the left edge (navbar area) */
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
+
+.map-legend h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  color: #333;
+}
+
+.map-legend ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.map-legend li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #555;
+}
+
+.map-legend li:last-child {
+  margin-bottom: 0;
+}
+
+.legend-color {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  border: 1px solid #000;
+  border-radius: 3px;
+}
+
+.legend-color.available {
+  background-color: rgba(0, 255, 0, 0.5); /* Green for available */
+}
+
+.legend-color.taken {
+  background-color: rgba(255, 0, 0, 0.5); /* Red for taken */
+}
+
+.legend-color.maintenance {
+  background-color: rgba(0, 0, 255, 0.5); /* Blue for under maintenance */
+}

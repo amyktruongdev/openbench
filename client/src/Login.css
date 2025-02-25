@@ -1,0 +1,106 @@
+/* Global Styles */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: rgb(183, 57, 57);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+  }
+  
+  /* Centering the Login Card */
+  .login-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 20px;
+  }
+  
+  /* Card Styles */
+  .login-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 40px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  }
+  
+  .login-header {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+  }
+  
+  /* Form Styles */
+  .login-form .input-group {
+    margin-bottom: 20px;
+  }
+  
+  .login-form .input-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+  }
+  
+  .login-form .input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  /* Options (Remember & Forgot Password) */
+  .options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #777;
+    margin-bottom: 20px;
+  }
+  
+  .forgot-link {
+    color: #0275d8;
+    text-decoration: none;
+  }
+  
+  .forgot-link:hover {
+    text-decoration: underline;
+  }
+  
+  /* Action Buttons */
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .login-btn {
+    background-color: #5cb85c;
+  }
+  
+  .login-btn:hover {
+    background-color: #4cae4c;
+  }
+  
+  .register-btn {
+    background-color: #0275d8;
+  }
+  
+  .register-btn:hover {
+    background-color: #025aa5;
+  }
+  

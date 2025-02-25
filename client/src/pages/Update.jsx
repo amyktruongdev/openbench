@@ -1,27 +1,38 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import '../Login.css'; // Import the updated CSS
 
 const Update = () => {
   return (
-    <div>
-      <h1 className="header">OpenBench Login</h1>
-      <div className="container">
-        <label htmlFor="uname"><b>Username</b></label>
-        <input type="text" placeholder="Enter Username" name="uname" required />
-
-        <label htmlFor="psw"><b>Password</b></label>
-        <input type="password" placeholder="Enter Password" name="psw" required />
-
-        <button type="submit"><Link to="/add">Login</Link></button>
-        <label>
-          <input type="checkbox" defaultChecked name="remember" /> Remember me
-        </label>
-      </div>
-
-      <div className="container" style={{ backgroundColor: "#f1f1f1" }}>
-        <button type="button" className="cancelbtn">Cancel</button>
-        <span className="psw">Forgot <a href="#"><Link to="/add">password?</Link></a></span>
-        <button type="button"className="createbtn"><Link to="/registration">Create Account</Link></button>
+    <div className="login-wrapper">
+      <div className="login-card">
+        <h1 className="login-header">OpenBench Login</h1>
+        <form className="login-form">
+          <div className="input-group">
+            <label htmlFor="uname">Username</label>
+            <input type="text" id="uname" placeholder="Enter Username" required />
+          </div>
+          <div className="input-group">
+            <label htmlFor="psw">Password</label>
+            <input type="password" id="psw" placeholder="Enter Password" required />
+          </div>
+          <div className="options">
+            <label className="remember">
+              <input type="checkbox" defaultChecked name="remember" /> Remember me
+            </label>
+            <Link to="/forgot-password" className="forgot-link">
+              Forgot password?
+            </Link>
+          </div>
+          <div className="actions">
+            <button type="submit" className="btn login-btn">
+              Login
+            </button>
+            <Link to="/registration" className="btn register-btn">
+              Create Account
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );

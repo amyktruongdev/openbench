@@ -1,38 +1,80 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import './Registration.css'; // Import the updated CSS
 
-const Registration = () => {
+const RegistrationPage = () => {
   return (
-    <div>
-      <h1 className="header">OpenBench Create Account</h1>
-      <div className="container">
-        <label htmlFor="firstname"><b>First Name</b></label>
-        <input type="text" placeholder="Enter Username" name="firstname" required />
-
-        <label htmlFor="lastname"><b>Last Name</b></label>
-        <input type="text" placeholder="Enter Password" name="lastname" required />
-
-        <label htmlFor="uname"><b>Username</b></label>
-        <input type="text" placeholder="Enter Password" name="uname" required />
-
-        <label htmlFor="email"><b>Email</b></label>
-        <input type="text" placeholder="Enter Password" name="email" required />
-
-        <label htmlFor="psw"><b>Password</b></label>
-        <input type="password" placeholder="Enter Password" name="psw" required />
-
-        <label htmlFor="psw"><b>Password Confirmation</b></label>
-        <input type="password" placeholder="Enter Password" name="psw" required />
-
-        <button type="submit"><Link to="/Add">Create Account</Link></button>
-      </div>
-
-      <div className="container" style={{ backgroundColor: "#f1f1f1" }}>
-        <button type="button" className="cancelbtn">Cancel</button>
-        
+    <div className="registration-wrapper">
+      <div className="registration-card">
+        <h1 className="registration-header">Create Your Account</h1>
+        <form className="registration-form">
+          <div className="input-group">
+            <label htmlFor="firstname">First Name</label>
+            <input
+              type="text"
+              id="firstname"
+              placeholder="Enter your first name"
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label htmlFor="lastname">Last Name</label>
+            <input
+              type="text"
+              id="lastname"
+              placeholder="Enter your last name"
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label htmlFor="uname">Username</label>
+            <input
+              type="text"
+              id="uname"
+              placeholder="Choose a username"
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              placeholder="Enter your email address"
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label htmlFor="psw">Password</label>
+            <input
+              type="password"
+              id="psw"
+              placeholder="Create a password"
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label htmlFor="confirm-psw">Confirm Password</label>
+            <input
+              type="password"
+              id="confirm-psw"
+              placeholder="Confirm your password"
+              required
+            />
+          </div>
+          <div className="actions">
+            <button type="submit" className="btn register-btn">
+            <Link to="/Add">Create Account</Link>
+            </button>
+            
+            <Link to="/" className="btn cancel-btn">
+              Cancel
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );
 };
 
-export default Registration;
+export default RegistrationPage;
