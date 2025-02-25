@@ -8,6 +8,7 @@
 /****************************************************************
                     SETTING UP WIFI CONNECTION
 ****************************************************************/
+/*
 Preferences preferences;
 
 // SSID for eduroam
@@ -63,6 +64,7 @@ void connectToEduroam() {
   Serial.print(F("IP address: "));
   Serial.println(WiFi.localIP());
 }
+*/
 
 /****************************************************************
                       SETTING UP MPU6050
