@@ -33,6 +33,8 @@ const RegistrationPage = () => {
               id="uname"
               placeholder="Choose a username"
               required
+              minlength="5"
+              maxlength="12"
             />
           </div>
           <div className="input-group">
@@ -51,6 +53,8 @@ const RegistrationPage = () => {
               id="psw"
               placeholder="Create a password"
               required
+              minlength="5"
+              maxlength="12"
             />
           </div>
           <div className="input-group">
@@ -60,14 +64,23 @@ const RegistrationPage = () => {
               id="confirm-psw"
               placeholder="Confirm your password"
               required
+              minlength="5"
+              maxlength="12"
             />
           </div>
-          <div className="security-questions">
-            <label htmlFor="security"></label>
+          <div className="input-group">
+            <label htmlFor="security">Security Question</label>
+            <select name="securityq" id="securityq" required>
+              <option value="" disabled selected>Select Security Question</option>
+              <option value="sq1">Name of first ever pet</option>
+              <option value="sq2">Model of your first car</option>
+              <option value="sq3">Your mothers surname</option>
+              <option value="sq4">Street name you live on</option>
+            </select>
           </div>
           <div className="actions">
             <button type="submit" className="btn register-btn">
-              <Link to="/Add">Create Account</Link>
+              <Link to="/Landing">Create Account</Link>
             </button>
 
             <Link to="/" className="btn cancel-btn">

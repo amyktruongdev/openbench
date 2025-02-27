@@ -3,9 +3,9 @@ import {
   Routes,
   Route,
 } from "react-router-dom";
-import Add from "./pages/Add";
+import Landing from "./pages/Landing";
 import Books from "./pages/Books";
-import Update from "./pages/Update";
+import Login from "./pages/Login";
 import Forgot from "./pages/Forgot";
 import Registration from "./pages/Registration";
 import Map from "./pages/Map";
@@ -18,8 +18,8 @@ function App() {
       <BrowserRouter>
       <Routes>
         <Route path="/" element={<Books/>}/>
-        <Route path="/add" element={<Add/>}/>
-        <Route path="/update" element={<Update/>}/>
+        <Route path="/landing" element={<Landing/>}/>
+        <Route path="/login" element={<Login/>}/>
         <Route path="/forgot" element={<Forgot/>}/>
         <Route path="/registration" element={<Registration/>}/>
         <Route path="/map" element={<Map/>}/>
