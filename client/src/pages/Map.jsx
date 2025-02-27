@@ -10,6 +10,7 @@ const Map = () => {
       <h1 className="header">OpenBench</h1>
       <Time />
       <Nav />
+      {/*Useable shapes front-->back*/}
       <div className="map-container">
         <img src="/map.png" alt="Map Image" className="map-image" />
         <div className="overlay-shape"></div>

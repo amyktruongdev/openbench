@@ -53,9 +53,10 @@ const RegistrationPage = () => {
               id="psw"
               placeholder="Create a password"
               required
-              minlength="5"
-              maxlength="12"
+              minlength="8"
+              maxlength="16" 
             />
+             {/*One upper, one lower, one special character for password*/}
           </div>
           <div className="input-group">
             <label htmlFor="confirm-psw">Confirm Password</label>
@@ -77,12 +78,12 @@ const RegistrationPage = () => {
               <option value="sq3">Your mothers surname</option>
               <option value="sq4">Street name you live on</option>
             </select>
+            {/*Answer section to send to backend*/}
           </div>
           <div className="actions">
             <button type="submit" className="btn register-btn">
               <Link to="/Landing">Create Account</Link>
             </button>
-
             <Link to="/" className="btn cancel-btn">
               Cancel
             </Link>
