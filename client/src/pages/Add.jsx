@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import Nav from '../Nav';
 import Footer from '../Footer';
 import Time from '../Time';
@@ -10,9 +9,10 @@ const Add = () => {
     <div>
       <Nav /> {/* Navbar will stay fixed on the left */}
       <div className="content">
+
+        <div className="box-container">
         <h1 className="header">OpenBench</h1>
         <Time />
-        <div className="box-container">
           <div className="row">
             <div className="box">
               <h2>Gym Overall</h2>

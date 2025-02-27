@@ -1,0 +1,21 @@
+.footer {
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent dark background */
+    color: white;
+    text-align: center;
+    padding: 20px;
+    position: relative;
+    bottom: 0;
+  }
+  
+  .footer h2 {
+    margin: 10px 0;
+    font-size: 20px;
+  }
+  
+  .footer p {
+    margin: 5px 0;
+    font-size: 16px;
+    opacity: 0.8; /* Slightly dimmed text for readability */
+  }
+  

@@ -1,6 +1,6 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import './Registration.css'; // Import the updated CSS
+import React from "react";
+import { Link } from "react-router-dom";
+import "./Registration.css"; // Import the updated CSS
 
 const RegistrationPage = () => {
   return (
@@ -62,11 +62,14 @@ const RegistrationPage = () => {
               required
             />
           </div>
+          <div className="security-questions">
+            <label htmlFor="security"></label>
+          </div>
           <div className="actions">
             <button type="submit" className="btn register-btn">
-            <Link to="/Add">Create Account</Link>
+              <Link to="/Add">Create Account</Link>
             </button>
-            
+
             <Link to="/" className="btn cancel-btn">
               Cancel
             </Link>

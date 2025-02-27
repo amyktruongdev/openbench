@@ -1,6 +1,7 @@
 import React from 'react';
 import Time from '../Time';
 import Nav from '../Nav';
+import Footer from '../Footer';
 import '../Map.css';
 
 const Map = () => {
@@ -42,6 +43,7 @@ const Map = () => {
           </ul>
         </div>
       </div>
+      <Footer></Footer>
     </div>
   );
 };

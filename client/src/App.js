@@ -9,6 +9,7 @@ import Update from "./pages/Update";
 import Forgot from "./pages/Forgot";
 import Registration from "./pages/Registration";
 import Map from "./pages/Map";
+import Maintenance from "./pages/Maintenance";
 
 
 function App() {
