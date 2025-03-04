@@ -15,8 +15,8 @@ void mpuSetUp() {
 
     // Check if MPU6050 is connected
     if (!mpu.testConnection()) {
-        Serial.println("MPU6050 connection failed!");
-        while (1);
+      Serial.println("MPU6050 connection failed! Halting execution.");
+      while (1); // Stop further execution
     }
 
     Serial.println("MPU6050 initialized!");
@@ -29,7 +29,7 @@ uint8_t gatewayAddress[] = {0xEC, 0x64, 0xC9, 0x5D, 0x37, 0x24}; // MAC of the g
 
 // Sensor Data structure defined to hold data related to sensor.
 typedef struct {
-    char id[4]; // Sensor node's unique id.
+    char id[10]; // Sensor node's unique id.
     bool active; // Boolean to represent if in use or not.
 } SensorData;
 
@@ -54,6 +54,11 @@ void setupESPNow() {
     memcpy(gatewayInfo.peer_addr, gatewayAddress, 6); // 6 bytes for each 2-digit hexadecimal value in mac addy
     gatewayInfo.channel = 0;
     gatewayInfo.encrypt = false;
+
+    esp_err_t result = esp_now_send(gatewayAddress, (uint8_t *)&data, sizeof(data));
+    if (result != ESP_OK) {
+        Serial.println("ESP-NOW send failed! Error code: " + String(result));
+    }
     
     // Check to see if gateway was added as peer in ESP-NOW network.
     if (esp_now_add_peer(&gatewayInfo) != ESP_OK) {
@@ -99,10 +104,10 @@ void loop() {
     bool movementDetected = accelMagnitude > MOVEMENT_THRESHOLD;
     if (movementDetected != data.active) {  // Send data only if state changes
         data.active = movementDetected;
-        Serial.println(movementDetected ? "Movement detected from sensor" : "💤 No Movement");
+        Serial.println(movementDetected ? "Movement detected from sensor " + String(data.id) : "No Movement");
         sendData();
     }
 
-    delay(1000);  // Adjust sampling rate
+    delay(5000);  // Adjust sampling rate
 
 }

@@ -13,7 +13,7 @@ SensorData receivedData;
 void onDataRecv(const esp_now_recv_info* info, const uint8_t* incomingData, int len) {
     memcpy(&receivedData, incomingData, sizeof(receivedData));
 
-    Serial.printf("📡 Data Received: %s - %s\n", 
+    Serial.printf("Data Received: %s - %s\n", 
                   receivedData.id, receivedData.active ? "Active" : "Idle");
 
     // Send acknowledgment back to sensor using the correct src_addr field
@@ -35,5 +35,5 @@ void setup() {
 }
 
 void loop() {
-    delay(1000);  // Keep the loop running
+    delay(5000);  // Keep the loop running
 }
