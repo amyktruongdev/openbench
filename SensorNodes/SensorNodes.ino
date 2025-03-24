@@ -1,12 +1,13 @@
 #include <Wire.h>
 #include <MPU6050.h>
 #include <esp_now.h>
+#include <WiFi.h>
 
 /****************************************************************
                       SETTING UP MPU6050
 ****************************************************************/
 MPU6050 mpu;  // Creates an instance of the MPU6050 sensor
-#define MOVEMENT_THRESHOLD 1.4  // Adjust based on sensitivity
+#define MOVEMENT_THRESHOLD 0.2  // Adjust based on sensitivity
 
 void mpuSetUp() {
     // Initialize MPU6050
@@ -15,8 +16,8 @@ void mpuSetUp() {
 
     // Check if MPU6050 is connected
     if (!mpu.testConnection()) {
-      Serial.println("MPU6050 connection failed! Halting execution.");
-      while (1); // Stop further execution
+        Serial.println("MPU6050 connection failed!");
+        while (1);
     }
 
     Serial.println("MPU6050 initialized!");
@@ -27,41 +28,32 @@ void mpuSetUp() {
 ****************************************************************/
 uint8_t gatewayAddress[] = {0xEC, 0x64, 0xC9, 0x5D, 0x37, 0x24}; // MAC of the gateway ESP32
 
-// Sensor Data structure defined to hold data related to sensor.
 typedef struct {
-    char id[10]; // Sensor node's unique id.
-    bool active; // Boolean to represent if in use or not.
+    char id[10];
+    bool active;
 } SensorData;
 
 SensorData data;
 
-// Callback when ESP-NOW data is sent.
-// Parameters mac address & status of send operation.
+// Callback when ESP-NOW data is sent
 void onDataSent(const uint8_t *macAddr, esp_now_send_status_t status) {
-    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Data sent! YAY." : "IT FAILED. BOOHOO!");
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "ESP-NOW Send Success" : "ESP-NOW Send Fail");
 }
 
 void setupESPNow() {
-    // Check if ESP-NOW initialization failed.
+    WiFi.mode(WIFI_STA);
     if (esp_now_init() != ESP_OK) {
         Serial.println("ESP-NOW initialization failed!");
         return;
     }
-    esp_now_register_send_cb(onDataSent); // Register "onDataSent" callback to check if send was good or not
+    esp_now_register_send_cb(onDataSent);
 
-    esp_now_peer_info_t gatewayInfo = {}; // Will hold info about the gateway.
-    // Copy gateway's mac addy into gatewayInfo's "peer_addr" field.
-    memcpy(gatewayInfo.peer_addr, gatewayAddress, 6); // 6 bytes for each 2-digit hexadecimal value in mac addy
-    gatewayInfo.channel = 0;
-    gatewayInfo.encrypt = false;
-
-    esp_err_t result = esp_now_send(gatewayAddress, (uint8_t *)&data, sizeof(data));
-    if (result != ESP_OK) {
-        Serial.println("ESP-NOW send failed! Error code: " + String(result));
-    }
+    esp_now_peer_info_t peerInfo = {};
+    memcpy(peerInfo.peer_addr, gatewayAddress, 6);
+    peerInfo.channel = 0;
+    peerInfo.encrypt = false;
     
-    // Check to see if gateway was added as peer in ESP-NOW network.
-    if (esp_now_add_peer(&gatewayInfo) != ESP_OK) {
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
         Serial.println("Failed to add ESP-NOW peer.");
     }
 }
@@ -76,7 +68,18 @@ void setup() {
     mpuSetUp();
     setupESPNow();
 
-    strcpy(data.id, "1");  // Set equipment ID
+    strcpy(data.id, "bench");  // Set equipment ID
+
+    // Initialize movement state with the first sensor reading
+    int16_t ax, ay, az;
+    mpu.getAcceleration(&ax, &ay, &az);
+
+    float accelX = ax / 16384.0;
+    float accelY = ay / 16384.0;
+    float accelZ = az / 16384.0;
+    float accelMagnitude = sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ);
+
+    data.active = accelMagnitude > MOVEMENT_THRESHOLD;
 }
 
 void sendData() {
@@ -85,6 +88,8 @@ void sendData() {
         Serial.println("ESP-NOW send failed");
     }
 }
+
+float lastAccelMagnitude = 1.0;  // Assume it starts at rest (~1g)
 
 void loop() {
     int16_t ax, ay, az; // Raw accelerometer values
@@ -101,13 +106,14 @@ void loop() {
     float accelMagnitude = sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ);
 
     // Check if movement is detected
-    bool movementDetected = accelMagnitude > MOVEMENT_THRESHOLD;
+    bool movementDetected = abs(accelMagnitude - lastAccelMagnitude) > MOVEMENT_THRESHOLD;
     if (movementDetected != data.active) {  // Send data only if state changes
         data.active = movementDetected;
-        Serial.println(movementDetected ? "Movement detected from sensor " + String(data.id) : "No Movement");
+        Serial.println(movementDetected ? "🚨 Movement Detected!" : "💤 No Movement");
         sendData();
     }
 
-    delay(5000);  // Adjust sampling rate
+    lastAccelMagnitude = accelMagnitude;  // Update last known acceleration
+    delay(1000);  // Adjust sampling rate
 
 }
