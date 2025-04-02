@@ -26,11 +26,14 @@ void mpuSetUp() {
 /****************************************************************
                         SETTING UP ESP-NOW
 ****************************************************************/
-uint8_t gatewayAddress[] = {0xEC, 0x64, 0xC9, 0x5D, 0x37, 0x24}; // MAC of the gateway ESP32
+uint8_t gatewayAddress[] = {0xA0, 0xB7, 0x65, 0x21, 0xE5, 0xBC}; // MAC of the gateway ESP32
 
 typedef struct {
-    char id[10];
-    bool active;
+    int sensor_id; // Sensor ID
+    char equipment_id[20]; // Equipment ID
+    bool inUse; // Activity Boolean
+    int battery; // Battery Percentage
+    unsigned long timestamp; // Timestamp
 } SensorData;
 
 SensorData data;
@@ -68,7 +71,12 @@ void setup() {
     mpuSetUp();
     setupESPNow();
 
-    strcpy(data.id, "bench");  // Set equipment ID
+    // Set up some of the values
+    data.sensor_id = 1;  // Set Sensor ID
+    strcpy(data.equipment_id, "BenchPress1"); // Set Equipment ID
+    /****REMOVE BELOW WHEN DONE TESTING****/
+    data.battery = random(1, 100);
+    data.timestamp = millis();
 
     // Initialize movement state with the first sensor reading
     int16_t ax, ay, az;
@@ -79,7 +87,7 @@ void setup() {
     float accelZ = az / 16384.0;
     float accelMagnitude = sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ);
 
-    data.active = accelMagnitude > MOVEMENT_THRESHOLD;
+    data.inUse = accelMagnitude > MOVEMENT_THRESHOLD;
 }
 
 void sendData() {
@@ -107,8 +115,8 @@ void loop() {
 
     // Check if movement is detected
     bool movementDetected = abs(accelMagnitude - lastAccelMagnitude) > MOVEMENT_THRESHOLD;
-    if (movementDetected != data.active) {  // Send data only if state changes
-        data.active = movementDetected;
+    if (movementDetected != data.inUse) {  // Send data only if state changes
+        data.inUse = movementDetected;
         Serial.println(movementDetected ? "🚨 Movement Detected!" : "💤 No Movement");
         sendData();
     }

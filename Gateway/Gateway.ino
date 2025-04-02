@@ -52,8 +52,11 @@ PubSubClient client(espClient);
 
 // Structure to receive data from sensor nodes
 typedef struct {
-    char id[10];
-    bool active;
+    int sensor_id; // Sensor ID
+    char equipment_id[20]; // Equipment ID
+    bool inUse; // Activity Boolean
+    int battery; // Battery Percentage
+    unsigned long timestamp; // Timestamp
 } SensorData;
 
 SensorData receivedData;
@@ -96,11 +99,23 @@ void connectToEduroam() {
 // ESP-NOW Callback Function
 void onDataRecv(const esp_now_recv_info* info, const uint8_t* incomingData, int len) {
     memcpy(&receivedData, incomingData, sizeof(receivedData));
-    Serial.printf("\n📡 Data Received: %s - %s\n", receivedData.id, receivedData.active ? "Active" : "Idle");
+    Serial.printf("\n📡 Data Received: Sensor=%s, Equipment=%s, Active=%s, Battery=%d%%, Time=%lu\n", 
+                  receivedData.sensor_id, 
+                  receivedData.equipment_id,
+                  receivedData.inUse ? "Active" : "Idle",
+                  receivedData.battery,
+                  receivedData.timestamp);
     
+    // Format Data to JSON
+    char message[100];
+    sprintf(message, "{\"sensor_id\":\"%s\",\"equipment_id\":\"%s\",\"inUse\":%s,\"battery\":%d,\"time\":%lu}", 
+            receivedData.sensor_id,
+            receivedData.equipment_id,
+            receivedData.inUse ? "true" : "false", 
+            receivedData.battery, 
+            receivedData.timestamp);
+
     // Publish received data to MQTT
-    char message[50];
-    sprintf(message, "{\"id\":\"%s\",\"active\":%s}", receivedData.id, receivedData.active ? "true" : "false");
     client.publish(mqtt_topic, message);
     Serial.println("📤 Data forwarded to MQTT");
     
