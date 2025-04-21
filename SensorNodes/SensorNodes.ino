@@ -26,7 +26,7 @@ void mpuSetUp() {
 /****************************************************************
                         SETTING UP ESP-NOW
 ****************************************************************/
-uint8_t gatewayAddress[] = {0xA0, 0xB7, 0x65, 0x21, 0xE5, 0xBC}; // MAC of the gateway ESP32
+uint8_t gatewayAddress[] = {0x88, 0x13, 0xBF, 0x82, 0x32, 0xF4}; // MAC of the gateway ESP32
 
 typedef struct {
     int sensor_id; // Sensor ID
