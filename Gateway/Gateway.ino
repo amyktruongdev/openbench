@@ -4,6 +4,7 @@
 #include <Preferences.h>
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
+#include "time.h"
 
 WebServer server(80);
 Preferences preferences;
@@ -14,6 +15,10 @@ const char* mqtt_server = "openbenches.com";
 const int mqtt_port = 8883;
 const char* mqtt_topic = "sensors/data";
 const char* mqtt_client_id = "esp32_gateway";
+
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = -28800;
+const int daylightOffset_sec = 0;
 
 const char* root_ca PROGMEM = R"EOF(-----BEGIN CERTIFICATE-----
 MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
@@ -59,7 +64,25 @@ typedef struct {
     unsigned long timestamp; // Timestamp
 } SensorData;
 
+typedef struct {
+    unsigned long timestamp;
+} TimePacket;
+
 SensorData receivedData;
+TimePacket timeData;
+uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  // Broadcast to all ESP-NOW nodes
+
+// Function to fetch time from NTP
+void getTimeFromNTP() {
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+        timeData.timestamp = time(nullptr);  // Get current Unix timestamp
+        Serial.print("Updated Time: ");
+        Serial.println(timeData.timestamp);
+    } else {
+        Serial.println("Failed to get time from NTP");
+    }
+}
 
 // Function to load credentials securely from NVS
 void loadCredentials(String& identity, String& username, String& password) {
@@ -94,12 +117,23 @@ void connectToEduroam() {
     Serial.println(F("\nWiFi is connected!"));
     Serial.print(F("IP address: "));
     Serial.println(WiFi.localIP());
+
+    // Configure NTP time
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    getTimeFromNTP();
+}
+
+// Send time updates via ESP-NOW
+void sendTimeUpdate() {
+    getTimeFromNTP();  // Fetch the latest NTP time
+    esp_now_send(broadcastAddress, (uint8_t*)&timeData, sizeof(timeData));
+    Serial.println("⏳ Time update sent to all sensors via ESP-NOW");
 }
 
 // ESP-NOW Callback Function
 void onDataRecv(const esp_now_recv_info* info, const uint8_t* incomingData, int len) {
     memcpy(&receivedData, incomingData, sizeof(receivedData));
-    Serial.printf("\n📡 Data Received: Sensor=%s, Equipment=%s, Active=%s, Battery=%d%%, Time=%lu\n", 
+    Serial.printf("\n📡 Data Received: Sensor=%d, Equipment=%s, Active=%s, Battery=%d%%, Time=%lu\n", 
                   receivedData.sensor_id, 
                   receivedData.equipment_id,
                   receivedData.inUse ? "Active" : "Idle",
@@ -108,7 +142,7 @@ void onDataRecv(const esp_now_recv_info* info, const uint8_t* incomingData, int 
     
     // Format Data to JSON
     char message[100];
-    sprintf(message, "{\"sensor_id\":\"%s\",\"equipment_id\":\"%s\",\"inUse\":%s,\"battery\":%d,\"time\":%lu}", 
+    sprintf(message, "{\"sensor_id\":%d,\"equipment_id\":\"%s\",\"inUse\":%s,\"battery\":%d,\"time\":%lu}", 
             receivedData.sensor_id,
             receivedData.equipment_id,
             receivedData.inUse ? "true" : "false", 
@@ -141,8 +175,19 @@ void reconnect() {
 
 void setup() {
     Serial.begin(115200);
+
     WiFi.mode(WIFI_STA);
     connectToEduroam();
+
+    // TEMPORARY CONNECTION
+        WiFi.begin(ssid, password);
+        
+        while (WiFi.status() != WL_CONNECTED) {
+            delay(500);
+            Serial.println("Connecting to WiFi..");
+        }
+        
+        Serial.println("Connected to the WiFi network");
     
     // Setup ESP-NOW
     if (esp_now_init() != ESP_OK) {
@@ -155,6 +200,22 @@ void setup() {
 
     // Setup MQTT
     client.setServer(mqtt_server, mqtt_port);
+
+        // Send time update every 10 minutes
+    xTaskCreatePinnedToCore(
+        [](void* parameter) {
+            while (true) {
+                sendTimeUpdate();
+                vTaskDelay(10 * 60 * 1000 / portTICK_PERIOD_MS);
+            }
+        },
+        "TimeUpdateTask",
+        4096,
+        NULL,
+        1,
+        NULL,
+        1
+    );
 }
 
 void loop() {
