@@ -57,9 +57,9 @@ PubSubClient client(espClient);
 
 // Structure to receive data from sensor nodes
 typedef struct {
-    int sensor_id; // Sensor ID
-    char equipment_id[20]; // Equipment ID
-    bool inUse; // Activity Boolean
+    int sensorId; // Sensor ID
+    int equipmentId; // Equipment ID
+    bool activity; // Activity Boolean
     int battery; // Battery Percentage
     unsigned long timestamp; // Timestamp
 } SensorData;
@@ -133,19 +133,19 @@ void sendTimeUpdate() {
 // ESP-NOW Callback Function
 void onDataRecv(const esp_now_recv_info* info, const uint8_t* incomingData, int len) {
     memcpy(&receivedData, incomingData, sizeof(receivedData));
-    Serial.printf("\n📡 Data Received: Sensor=%d, Equipment=%s, Active=%s, Battery=%d%%, Time=%lu\n", 
-                  receivedData.sensor_id, 
-                  receivedData.equipment_id,
-                  receivedData.inUse ? "Active" : "Idle",
+    Serial.printf("\n📡 Data Received: Sensor=%d, Equipment=%d, Active=%s, Battery=%d%%, Time=%lu\n", 
+                  receivedData.sensorId, 
+                  receivedData.equipmentId,
+                  receivedData.activity ? "Active" : "Idle",
                   receivedData.battery,
                   receivedData.timestamp);
     
     // Format Data to JSON
     char message[100];
-    sprintf(message, "{\"sensor_id\":%d,\"equipment_id\":\"%s\",\"inUse\":%s,\"battery\":%d,\"time\":%lu}", 
-            receivedData.sensor_id,
-            receivedData.equipment_id,
-            receivedData.inUse ? "true" : "false", 
+    sprintf(message, "{\"sensorId\":%d,\"equipmentId\":\"%d\",\"activity\":%s,\"battery\":%d,\"time\":%lu}", 
+            receivedData.sensorId,
+            receivedData.equipmentId,
+            receivedData.activity ? "true" : "false", 
             receivedData.battery, 
             receivedData.timestamp);
 
@@ -178,16 +178,9 @@ void setup() {
 
     WiFi.mode(WIFI_STA);
     connectToEduroam();
-
-    // TEMPORARY CONNECTION
-        WiFi.begin(ssid, password);
-        
-        while (WiFi.status() != WL_CONNECTED) {
-            delay(500);
-            Serial.println("Connecting to WiFi..");
-        }
-        
-        Serial.println("Connected to the WiFi network");
+    Serial.print("✅ Gateway WiFi Channel: ");
+    Serial.println(WiFi.channel());
+    delay(5000);
     
     // Setup ESP-NOW
     if (esp_now_init() != ESP_OK) {

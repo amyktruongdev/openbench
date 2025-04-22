@@ -3,6 +3,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include "esp_sleep.h"
+#include "esp_wifi.h"
 #include "esp_timer.h"
 #include "time.h"
 
@@ -18,9 +19,9 @@ MPU6050 mpu;
 uint8_t gatewayAddress[] = {0x88, 0x13, 0xBF, 0x82, 0x32, 0xF4}; // MAC of the gateway ESP32
 
 typedef struct {
-    int sensor_id; // Sensor ID
-    char equipment_id[20]; // Equipment ID
-    bool inUse; // Activity Boolean
+    int sensorId; // Sensor ID
+    int equipmentId; // Equipment ID
+    bool activity; // Activity Boolean
     int battery; // Battery Percentage
     unsigned long timestamp; // Timestamp
 } SensorData;
@@ -63,20 +64,30 @@ void onTimeReceived(const esp_now_recv_info_t *recv_info, const uint8_t *data, i
 }
 
 void setupESPNow() {
+    Serial.println("setting up esp now!");
     WiFi.mode(WIFI_STA);
+
+    esp_wifi_set_promiscuous(true);
+    esp_wifi_set_channel(11, WIFI_SECOND_CHAN_NONE);
+    esp_wifi_set_promiscuous(false);
+
     if (esp_now_init() != ESP_OK) {
         Serial.println("ESP-NOW initialization failed!");
         return;
     }
-    esp_now_register_send_cb(onDataSent);
 
     esp_now_peer_info_t peerInfo = {};
     memcpy(peerInfo.peer_addr, gatewayAddress, 6);
-    peerInfo.channel = 0;
+    peerInfo.channel = 11;
     peerInfo.encrypt = false;
+
+    esp_now_register_send_cb(onDataSent);
     
-    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-        Serial.println("Failed to add ESP-NOW peer.");
+    if (!esp_now_is_peer_exist(gatewayAddress)) {
+        if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+            Serial.println("ohno! no peer!");
+            return;
+        }
     }
 
     esp_now_register_recv_cb(onTimeReceived);
@@ -118,8 +129,9 @@ void setupMPU6050() {
     }
 
     mpu.setIntEnabled(0x40); // Enable Motion Interrupt
-    mpu.setMotionDetectionThreshold(3);  // Moderate sensitivity to movement
-    mpu.setMotionDetectionDuration(1);   // 2 seconds of continuous motion to trigger detection
+    mpu.setFullScaleAccelRange(MPU6050_ACCEL_FS_16);  // ±4g range, good for most gym movements
+    mpu.setMotionDetectionThreshold(100);             // Higher threshold avoids false positives
+    mpu.setMotionDetectionDuration(10);              // ~10ms of continuous motion
     mpu.setInterruptLatch(0);
     mpu.setIntMotionEnabled(true);
     mpu.setInterruptLatch(true);        // Latches the INT pin HIGH until cleared
@@ -158,8 +170,8 @@ void setup() {
     setupESPNow();
 
     // Set up some of the values
-    data.sensor_id = 1;  // Set Sensor ID
-    strcpy(data.equipment_id, "BenchPress1"); // Set Equipment ID
+    data.sensorId = 1;  // Set Sensor ID
+    data.equipmentId = 1; // Set Equipment ID
     /****REMOVE BELOW WHEN DONE TESTING****/
     data.battery = random(1, 100);
 
@@ -177,8 +189,11 @@ void setup() {
 
 void sendData() {
     esp_err_t result = esp_now_send(gatewayAddress, (uint8_t *)&data, sizeof(data));
-    if (result != ESP_OK) {
-        Serial.println("ESP-NOW send failed");
+    if (result == ESP_OK) {
+        Serial.println("✅ ESP-NOW Send Success");
+    } else {
+        Serial.print("❌ ESP-NOW Send Fail, code: ");
+        Serial.println(result);
     }
 }
 
@@ -202,15 +217,15 @@ void loop() {
 
 
     if (motionDetected) {
-        Serial.println("⚡ Motion Interrupt Fired!");
         esp_timer_stop(inactivityTimer);
         esp_timer_start_once(inactivityTimer, inactivityTimeout);
 
-        Serial.println("🚨 Motion detected! Sending data...");
-        data.inUse = true;
+        Serial.println("motion detected! sending data...");
+        data.activity = true;
         data.timestamp = deviceTime;
         delay(30);
         sendData();
+        delay(100);  // Prevents rapid-fire sends
 
         mpu.getIntStatus();  // Clears the interrupt latch
         motionDetected = false;
@@ -233,7 +248,9 @@ void loop() {
 
         esp_light_sleep_start();
 
-        Serial.println("🔄 Woke up from Light Sleep");
+        Serial.println("i'm now awake");
+        setupESPNow();
+
         attachInterrupt(digitalPinToInterrupt(MPU_INT_PIN), onMotionInterrupt, RISING);
         mpu.setIntEnabled(0x40);  // Re-enable motion interrupt
     }
