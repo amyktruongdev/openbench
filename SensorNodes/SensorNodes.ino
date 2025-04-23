@@ -99,7 +99,7 @@ void setupESPNow() {
 volatile bool motionDetected = false;
 volatile bool readyToSleep = false;
 esp_timer_handle_t inactivityTimer;
-const uint64_t inactivityTimeout = 10 * 1000000ULL;  // 10 seconds
+const uint64_t inactivityTimeout = 2 * 60 * 1000000ULL;  // inactive time until light sleep: 2 minutes
 const unsigned long checkInterval = 10 * 60 * 1000;  // 10 minutes
 unsigned long lastCheck = 0;
 
@@ -243,8 +243,15 @@ void loop() {
             delay(10);
         }
 
-        esp_sleep_enable_ext0_wakeup((gpio_num_t)MPU_INT_PIN, 1);
-        esp_sleep_enable_timer_wakeup(10 * 60 * 1000000ULL); // 10 min
+        // Send inactivity packet before light sleep
+        data.activity = false;
+        data.timestamp = deviceTime;
+        sendData();
+        delay(100);  // Small delay to let ESP-NOW transmission complete        
+
+        // Enable wakeup souces
+        esp_sleep_enable_ext0_wakeup((gpio_num_t)MPU_INT_PIN, 1); // Detect motion interrupt
+        esp_sleep_enable_timer_wakeup(10 * 60 * 1000000ULL); // Wake up every time minutes
 
         esp_light_sleep_start();
 
