@@ -30,7 +30,7 @@ SensorData data;
 
 // Callback when ESP-NOW data is sent
 void onDataSent(const uint8_t *macAddr, esp_now_send_status_t status) {
-    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "ESP-NOW Send Success" : "ESP-NOW Send Fail");
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "send success!" : "data not sent");
 }
 
 typedef struct {
@@ -64,7 +64,6 @@ void onTimeReceived(const esp_now_recv_info_t *recv_info, const uint8_t *data, i
 }
 
 void setupESPNow() {
-    Serial.println("setting up esp now!");
     WiFi.mode(WIFI_STA);
 
     esp_wifi_set_promiscuous(true);
@@ -91,6 +90,8 @@ void setupESPNow() {
     }
 
     esp_now_register_recv_cb(onTimeReceived);
+
+    Serial.println("esp-now set up complete!");
 }
 
 /****************************************************************
@@ -129,9 +130,9 @@ void setupMPU6050() {
     }
 
     mpu.setIntEnabled(0x40); // Enable Motion Interrupt
-    mpu.setFullScaleAccelRange(MPU6050_ACCEL_FS_16);  // ±4g range, good for most gym movements
-    mpu.setMotionDetectionThreshold(100);             // Higher threshold avoids false positives
-    mpu.setMotionDetectionDuration(10);              // ~10ms of continuous motion
+    mpu.setFullScaleAccelRange(MPU6050_ACCEL_FS_4);  // ±4g range, good for most gym movements
+    mpu.setMotionDetectionThreshold(10);             // Higher threshold avoids false positives
+    mpu.setMotionDetectionDuration(2);              // ~10ms of continuous motion
     mpu.setInterruptLatch(0);
     mpu.setIntMotionEnabled(true);
     mpu.setInterruptLatch(true);        // Latches the INT pin HIGH until cleared
@@ -139,6 +140,8 @@ void setupMPU6050() {
 
     pinMode(MPU_INT_PIN, INPUT);
     attachInterrupt(digitalPinToInterrupt(MPU_INT_PIN), onMotionInterrupt, RISING);
+
+    Serial.println("mpu6050 set up complete!");
 }
 
 /****************************************************************
@@ -154,13 +157,33 @@ void enterDeepSleepUntil6AM(int currentHour) {
     esp_deep_sleep_start();
 }
 
+// battery percentage variables
+const int adcPin = 34;        // ADC pin connected to the middle of the voltage divider
+const float referenceVoltage = 3.3; // ESP32 ADC reference voltage
+const int adcResolution = 4095;     // 12-bit ADC
+const float voltageDividerRatio = 0.5; // Due to two 100kΩ resistors
+
+void batteryCalculation() {
+  int adcValue = analogRead(adcPin);
+
+  // Convert ADC reading to voltage at pin
+  float adcVoltage = (adcValue / (float)adcResolution) * referenceVoltage;
+  // Reverse the voltage divider to find actual battery voltage
+  float batteryVoltage = adcVoltage / voltageDividerRatio;
+
+  // Calculate battery percentage
+  float batteryPercent = (batteryVoltage - 3.0) / (4.2 - 3.0) * 100.0;
+  // Clamp between 0% and 100%
+  batteryPercent = constrain(batteryPercent, 0.0, 100.0);
+  data.battery = (int)batteryPercent;
+}
 
 /****************************************************************
 ****************************************************************/
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("Starting setup!");
+    Serial.println("starting setup!");
 
     configTime(0, 0, "");  // Prevents time drift
     setenv("TZ", "PST8PDT,M3.2.0,M11.1.0", 1);
@@ -172,8 +195,6 @@ void setup() {
     // Set up some of the values
     data.sensorId = 1;  // Set Sensor ID
     data.equipmentId = 1; // Set Equipment ID
-    /****REMOVE BELOW WHEN DONE TESTING****/
-    data.battery = random(1, 100);
 
     // Set up inactivity timer
     esp_timer_create_args_t timerArgs = {
@@ -184,15 +205,17 @@ void setup() {
 
     lastCheck = millis();
 
-    Serial.println("Setup complete!");
+    analogReadResolution(12); // Ensure 12-bit ADC resolution
+
+    Serial.println("setup complete!");
 }
 
 void sendData() {
     esp_err_t result = esp_now_send(gatewayAddress, (uint8_t *)&data, sizeof(data));
     if (result == ESP_OK) {
-        Serial.println("✅ ESP-NOW Send Success");
+        Serial.println("esp-now sending...");
     } else {
-        Serial.print("❌ ESP-NOW Send Fail, code: ");
+        Serial.print("esp-now fail, code: ");
         Serial.println(result);
     }
 }
@@ -246,6 +269,7 @@ void loop() {
         // Send inactivity packet before light sleep
         data.activity = false;
         data.timestamp = deviceTime;
+        batteryCalculation();
         sendData();
         delay(100);  // Small delay to let ESP-NOW transmission complete        
 
