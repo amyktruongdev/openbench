@@ -55,8 +55,15 @@ emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
 
+enum TimePacket {
+    SENSOR_DATA,
+    TIME_REQUEST,
+    TIME_RESPONSE
+};
+
 // Structure to receive data from sensor nodes
 typedef struct {
+    TimePacket type;
     int sensorId; // Sensor ID
     int equipmentId; // Equipment ID
     bool activity; // Activity Boolean
@@ -65,20 +72,21 @@ typedef struct {
 } SensorData;
 
 typedef struct {
+    TimePacket type;
     unsigned long timestamp;
-} TimePacket;
+} TimeData;
 
 SensorData receivedData;
-TimePacket timeData;
+TimeData sensorTime;
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  // Broadcast to all ESP-NOW nodes
 
 // Function to fetch time from NTP
 void getTimeFromNTP() {
     struct tm timeinfo;
     if (getLocalTime(&timeinfo)) {
-        timeData.timestamp = time(nullptr);  // Get current Unix timestamp
+        sensorTime.timestamp = time(nullptr);  // Get current Unix timestamp
         Serial.print("Updated Time: ");
-        Serial.println(timeData.timestamp);
+        Serial.println(sensorTime.timestamp);
     } else {
         Serial.println("Failed to get time from NTP");
     }
@@ -126,35 +134,57 @@ void connectToEduroam() {
 // Send time updates via ESP-NOW
 void sendTimeUpdate() {
     getTimeFromNTP();  // Fetch the latest NTP time
-    esp_now_send(broadcastAddress, (uint8_t*)&timeData, sizeof(timeData));
+    esp_now_send(broadcastAddress, (uint8_t*)&sensorTime, sizeof(sensorTime));
     Serial.println("⏳ Time update sent to all sensors via ESP-NOW");
 }
 
 // ESP-NOW Callback Function
 void onDataRecv(const esp_now_recv_info* info, const uint8_t* incomingData, int len) {
-    memcpy(&receivedData, incomingData, sizeof(receivedData));
-    Serial.printf("\n📡 Data Received: Sensor=%d, Equipment=%d, Active=%s, Battery=%d%%, Time=%lu\n", 
-                  receivedData.sensorId, 
-                  receivedData.equipmentId,
-                  receivedData.activity ? "Active" : "Idle",
-                  receivedData.battery,
-                  receivedData.timestamp);
-    
-    // Format Data to JSON
-    char message[100];
-    sprintf(message, "{\"sensorId\":%d,\"equipmentId\":\"%d\",\"activity\":%s,\"battery\":%d,\"time\":%lu}", 
-            receivedData.sensorId,
-            receivedData.equipmentId,
-            receivedData.activity ? "true" : "false", 
-            receivedData.battery, 
-            receivedData.timestamp);
+    TimePacket type = *((TimePacket*)incomingData);
+    if (type == SENSOR_DATA) {
+        memcpy(&receivedData, incomingData, sizeof(receivedData));
+        Serial.printf("\n📡 Data Received: Sensor=%d, Equipment=%d, Active=%s, Battery=%d%%, Time=%lu\n", 
+                    receivedData.sensorId, 
+                    receivedData.equipmentId,
+                    receivedData.activity ? "Active" : "Idle",
+                    receivedData.battery,
+                    receivedData.timestamp);
+        
+        // Format Data to JSON
+        char message[100];
+        sprintf(message, "{\"sensorId\":%d,\"equipmentId\":\"%d\",\"activity\":%s,\"battery\":%d,\"time\":%lu}", 
+                receivedData.sensorId,
+                receivedData.equipmentId,
+                receivedData.activity ? "true" : "false", 
+                receivedData.battery, 
+                receivedData.timestamp);
 
-    // Publish received data to MQTT
-    client.publish(mqtt_topic, message);
-    Serial.println("📤 Data forwarded to MQTT");
-    
-    // Send acknowledgment back to sensor
-    esp_now_send(info->src_addr, (uint8_t *)&receivedData, sizeof(receivedData));
+        // Publish received data to MQTT
+        client.publish(mqtt_topic, message);
+        Serial.println("📤 Data forwarded to MQTT");
+
+        // ✅ Zero-initialize acknowledgment struct before sending
+        SensorData ackData;
+        memset(&ackData, 0, sizeof(ackData));
+        
+        // Send acknowledgment back to sensor
+        esp_err_t result = esp_now_send(info->src_addr, (uint8_t *)&ackData, sizeof(ackData));
+        if (result == ESP_OK) {
+            Serial.println("✅ Data sent");
+        } else {
+            Serial.printf("Size of acknowledgment packet: %d bytes\n", sizeof(ackData));
+            Serial.printf("❌ Error sending data: %d\n", result);
+        }
+
+    } else if (type == TIME_REQUEST) {
+        Serial.println("time request received, sending response...");
+        getTimeFromNTP();
+        TimeData response;
+        response.type = TIME_RESPONSE;
+        response.timestamp = sensorTime.timestamp;
+
+        esp_now_send(info->src_addr, (uint8_t*)&response, sizeof(response));
+    }
 }
 
 

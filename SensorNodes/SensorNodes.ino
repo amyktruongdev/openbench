@@ -18,13 +18,25 @@ MPU6050 mpu;
 ****************************************************************/
 uint8_t gatewayAddress[] = {0x88, 0x13, 0xBF, 0x82, 0x32, 0xF4}; // MAC of the gateway ESP32
 
+enum TimePacket {
+    SENSOR_DATA,
+    TIME_REQUEST,
+    TIME_RESPONSE
+};
+
 typedef struct {
+    TimePacket type;
     int sensorId; // Sensor ID
     int equipmentId; // Equipment ID
     bool activity; // Activity Boolean
     int battery; // Battery Percentage
     unsigned long timestamp; // Timestamp
 } SensorData;
+
+typedef struct {
+    TimePacket type;
+    unsigned long timestamp;
+} TimeData;
 
 SensorData data;
 
@@ -38,10 +50,22 @@ typedef struct {
 } SyncedTime;
 
 // Time Management
+void requestTime() {
+    TimeData request;
+    request.type = TIME_REQUEST;
+
+    esp_err_t result = esp_now_send(gatewayAddress, (uint8_t*)&request, sizeof(request));
+    if (result == ESP_OK) {
+        Serial.println("requesting time!");
+
+    } else {
+        Serial.println("failed time request :(");
+    }
+}
+
 unsigned long deviceTime = 0;  // Store Unix time from the gateway
 
-void onTimeReceived(const esp_now_recv_info_t *recv_info, const uint8_t *data, int data_len) {
-    // Optional: Access MAC address via recv_info->src_addr
+void onDataReceived(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len) {
     Serial.print("Received data from: ");
     char macStr[18];
     snprintf(macStr, sizeof(macStr),
@@ -50,18 +74,31 @@ void onTimeReceived(const esp_now_recv_info_t *recv_info, const uint8_t *data, i
              recv_info->src_addr[3], recv_info->src_addr[4], recv_info->src_addr[5]);
     Serial.println(macStr);
 
-    // Handle the received data
-    if (data_len == sizeof(SyncedTime)) {
-        SyncedTime incomingTime;
-        memcpy(&incomingTime, data, sizeof(SyncedTime));
-        deviceTime = incomingTime.unix_time;
+    // Check minimum size for TimePacket
+    if (len < sizeof(TimePacket)) {
+        Serial.println("⚠️ Received packet too small!");
+        return;
+    }
 
-        Serial.print("✅ Synced time: ");
-        Serial.println(deviceTime);
-    } else {
-        Serial.println("⚠️ Received unknown data size");
+    // Identify packet type
+    TimePacket type = *((TimePacket*)incomingData);
+
+    if (type == TIME_RESPONSE) {
+        if (len == sizeof(TimeData)) {
+            TimeData response;
+            memcpy(&response, incomingData, sizeof(response));
+            Serial.print("📥 Time received: ");
+            Serial.println(response.timestamp);
+            deviceTime = response.timestamp;
+        } else {
+            Serial.println("⚠️ Invalid TIME_RESPONSE size");
+        }
+    }
+    else {
+        Serial.println("⚠️ Unknown packet type received");
     }
 }
+
 
 void setupESPNow() {
     WiFi.mode(WIFI_STA);
@@ -89,7 +126,7 @@ void setupESPNow() {
         }
     }
 
-    esp_now_register_recv_cb(onTimeReceived);
+    esp_now_register_recv_cb(onDataReceived);
 
     Serial.println("esp-now set up complete!");
 }
@@ -103,10 +140,6 @@ esp_timer_handle_t inactivityTimer;
 const uint64_t inactivityTimeout = 2 * 60 * 1000000ULL;  // inactive time until light sleep: 2 minutes
 const unsigned long checkInterval = 10 * 60 * 1000;  // 10 minutes
 unsigned long lastCheck = 0;
-
-typedef struct {
-    unsigned long timestamp;
-} TimePacket;
 
 // Interrupt function for motion detection
 void IRAM_ATTR onMotionInterrupt() {
@@ -194,7 +227,7 @@ void setup() {
 
     // Set up some of the values
     data.sensorId = 1;  // Set Sensor ID
-    data.equipmentId = 1; // Set Equipment ID
+    data.equipmentId = 63; // Set Equipment ID
 
     // Set up inactivity timer
     esp_timer_create_args_t timerArgs = {
