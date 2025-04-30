@@ -5,12 +5,16 @@
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
 #include "time.h"
+#include <vector>
+#include <array>
 
 WebServer server(80);
 Preferences preferences;
+std::vector<std::array<uint8_t, 6>> sensorMACs;
 
 // SSID for eduroam
 const char* ssid = "eduroam";
+
 const char* mqtt_server = "openbenches.com";
 const int mqtt_port = 8883;
 const char* mqtt_topic = "sensors/data";
@@ -82,14 +86,24 @@ uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  // Broadcast
 
 // Function to fetch time from NTP
 void getTimeFromNTP() {
+    // Configure NTP time
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
     struct tm timeinfo;
-    if (getLocalTime(&timeinfo)) {
-        sensorTime.timestamp = time(nullptr);  // Get current Unix timestamp
-        Serial.print("Updated Time: ");
-        Serial.println(sensorTime.timestamp);
-    } else {
-        Serial.println("Failed to get time from NTP");
+    int retries = 3;
+    while (retries > 0) {
+        if (getLocalTime(&timeinfo)) {
+            sensorTime.timestamp = time(nullptr);  // Get current Unix timestamp
+            Serial.print("Updated Time: ");
+            Serial.println(sensorTime.timestamp);
+            return;  // Successfully got the time, exit function
+        } else {
+            Serial.println("Failed to get time from NTP, retrying...");
+            retries--;
+            delay(2000);  // Wait 2 seconds before retrying
+        }
     }
+    Serial.println("Failed to get time from NTP after several retries.");
 }
 
 // Function to load credentials securely from NVS
@@ -126,8 +140,6 @@ void connectToEduroam() {
     Serial.print(F("IP address: "));
     Serial.println(WiFi.localIP());
 
-    // Configure NTP time
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     getTimeFromNTP();
 }
 
@@ -138,9 +150,36 @@ void sendTimeUpdate() {
     Serial.println("⏳ Time update sent to all sensors via ESP-NOW");
 }
 
+bool isKnownPeer(const uint8_t *mac) {
+    for (auto& addr : sensorMACs) {
+        if (memcmp(addr.data(), mac, 6) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // ESP-NOW Callback Function
 void onDataRecv(const esp_now_recv_info* info, const uint8_t* incomingData, int len) {
     TimePacket type = *((TimePacket*)incomingData);
+
+    // 👉 Check and register new peer MACs here
+    if (!isKnownPeer(info->src_addr)) {
+        esp_now_peer_info_t peerInfo = {};
+        memcpy(peerInfo.peer_addr, info->src_addr, 6);
+        peerInfo.channel = 0;
+        peerInfo.encrypt = false;
+
+        if (esp_now_add_peer(&peerInfo) == ESP_OK) {
+            std::array<uint8_t, 6> newMAC;
+            memcpy(newMAC.data(), info->src_addr, 6);
+            sensorMACs.push_back(newMAC);
+            Serial.println("✅ New peer added.");
+        } else {
+            Serial.println("❌ Failed to add new peer.");
+        }
+    }
+
     if (type == SENSOR_DATA) {
         memcpy(&receivedData, incomingData, sizeof(receivedData));
         Serial.printf("\n📡 Data Received: Sensor=%d, Equipment=%d, Active=%s, Battery=%d%%, Time=%lu\n", 
@@ -149,7 +188,7 @@ void onDataRecv(const esp_now_recv_info* info, const uint8_t* incomingData, int 
                     receivedData.activity ? "Active" : "Idle",
                     receivedData.battery,
                     receivedData.timestamp);
-        
+
         // Format Data to JSON
         char message[100];
         sprintf(message, "{\"sensorId\":%d,\"equipmentId\":\"%d\",\"activity\":%s,\"battery\":%d,\"time\":%lu}", 
@@ -159,25 +198,24 @@ void onDataRecv(const esp_now_recv_info* info, const uint8_t* incomingData, int 
                 receivedData.battery, 
                 receivedData.timestamp);
 
-        // Publish received data to MQTT
+        // Publish to MQTT
         client.publish(mqtt_topic, message);
         Serial.println("📤 Data forwarded to MQTT");
 
-        // ✅ Zero-initialize acknowledgment struct before sending
+        // Zero-initialize acknowledgment struct before sending
         SensorData ackData;
         memset(&ackData, 0, sizeof(ackData));
-        
+
         // Send acknowledgment back to sensor
         esp_err_t result = esp_now_send(info->src_addr, (uint8_t *)&ackData, sizeof(ackData));
         if (result == ESP_OK) {
-            Serial.println("✅ Data sent");
+            Serial.println("✅ Acknowledgment sent");
         } else {
-            Serial.printf("Size of acknowledgment packet: %d bytes\n", sizeof(ackData));
-            Serial.printf("❌ Error sending data: %d\n", result);
+            Serial.printf("❌ Error sending ack: %d\n", result);
         }
 
     } else if (type == TIME_REQUEST) {
-        Serial.println("time request received, sending response...");
+        Serial.println("🕒 Time request received, sending response...");
         getTimeFromNTP();
         TimeData response;
         response.type = TIME_RESPONSE;
@@ -187,6 +225,26 @@ void onDataRecv(const esp_now_recv_info* info, const uint8_t* incomingData, int 
     }
 }
 
+void broadcastTimeSync() {
+    getTimeFromNTP();
+    TimeData syncData;
+    syncData.type = TIME_RESPONSE;
+    syncData.timestamp = sensorTime.timestamp;
+
+    for (auto& macAddr : sensorMACs) {
+        esp_err_t result = esp_now_send(macAddr.data(), (uint8_t*)&syncData, sizeof(syncData));
+        if (result == ESP_OK) {
+            Serial.print("📨 Sent time sync to: ");
+            for (int i = 0; i < 6; i++) {
+                Serial.printf("%02X", macAddr[i]);
+                if (i < 5) Serial.print(":");
+            }
+            Serial.println();
+        } else {
+            Serial.printf("❌ Failed to send to peer: %d\n", result);
+        }
+    }
+}
 
 // MQTT Setup
 void reconnect() {
@@ -207,6 +265,7 @@ void setup() {
     Serial.begin(115200);
 
     WiFi.mode(WIFI_STA);
+    // WiFi.begin(ssid, password);
     connectToEduroam();
     Serial.print("✅ Gateway WiFi Channel: ");
     Serial.println(WiFi.channel());
@@ -224,7 +283,7 @@ void setup() {
     // Setup MQTT
     client.setServer(mqtt_server, mqtt_port);
 
-        // Send time update every 10 minutes
+    // Send time update every 10 minutes
     xTaskCreatePinnedToCore(
         [](void* parameter) {
             while (true) {
@@ -239,9 +298,18 @@ void setup() {
         NULL,
         1
     );
+    broadcastTimeSync();
 }
 
 void loop() {
+    // FOR MANUAL TESTING
+    if (Serial.available()) {
+        char c = Serial.read();
+        if (c == 't') {
+            broadcastTimeSync();
+        }
+    }
+
     if (!client.connected()) {
         reconnect();
     }
