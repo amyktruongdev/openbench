@@ -4,7 +4,7 @@
 #include <Preferences.h>
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
-#include "time.h"
+#include <time.h>
 #include <vector>
 #include <array>
 
@@ -88,6 +88,7 @@ uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  // Broadcast
 void getTimeFromNTP() {
     // Configure NTP time
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    delay(300);
 
     struct tm timeinfo;
     int retries = 3;
@@ -302,14 +303,6 @@ void setup() {
 }
 
 void loop() {
-    // FOR MANUAL TESTING
-    if (Serial.available()) {
-        char c = Serial.read();
-        if (c == 't') {
-            broadcastTimeSync();
-        }
-    }
-
     if (!client.connected()) {
         reconnect();
     }

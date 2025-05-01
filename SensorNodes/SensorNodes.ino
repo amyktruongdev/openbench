@@ -127,7 +127,6 @@ void setupESPNow() {
   esp_now_peer_info_t peerInfo = {};
   memcpy(peerInfo.peer_addr, gatewayAddress, 6);
   peerInfo.channel = 11;
-  // peerInfo.channel = 6;
   peerInfo.encrypt = false;
 
   esp_now_register_send_cb(onDataSent);
@@ -242,7 +241,7 @@ void setup() {
 
   // Set up some of the values
   data.sensorId = 1;      // Set Sensor ID
-  data.equipmentId = 63;  // Set Equipment ID
+  data.equipmentId = 71;  // Set Equipment ID
 
   // Set up inactivity timer
   esp_timer_create_args_t timerArgs = {
@@ -254,6 +253,12 @@ void setup() {
   lastCheck = millis();
 
   analogReadResolution(12);  // Ensure 12-bit ADC resolution
+
+  requestTime();
+  unsigned long startWait = millis();
+  while (deviceTime == 0 && millis() - startWait < 5000) {
+    delay(100); // Wait up to 5 seconds for time
+  }
 
   Serial.println("setup complete!");
 }
